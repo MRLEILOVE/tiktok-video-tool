@@ -243,7 +243,7 @@ public class TikTokHttpUtil {
             int start = url.indexOf("http");
             // 从http开始提取整个URL
             String dyUri = url.substring(start);
-            // 尝试找到第一个空格前的位置，作为URL的结束位置
+            // 尝试找到第一个/空格前的位置，作为URL的结束位置
             int end = dyUri.indexOf("/ ");
             // 如果找不到空格，则取最后一个斜杠的位置作为URL的结束位置
             if (end < 1) {
