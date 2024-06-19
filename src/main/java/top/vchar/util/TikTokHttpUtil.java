@@ -56,9 +56,9 @@ public class TikTokHttpUtil {
     // 接受的 MIME 类型，表示客户端希望服务器返回的资源类型
     private static final String ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
 
-    private CloseableHttpClient httpClient;
+    private final CloseableHttpClient httpClient;
 
-    private AppUI appUI;
+    private final AppUI appUI;
 
     private TikTokHttpUtil(AppUI appUI) {
         CookieStore cookieStore = new BasicCookieStore();
@@ -189,7 +189,7 @@ public class TikTokHttpUtil {
 
     /**
      * 使用Brotli解压缩给定的字节数据。
-     *
+     * <p>
      * 此方法通过BrotliInputStream读取压缩后的字节数据，并将其解压缩后写入ByteArrayOutputStream。
      * 使用try-with-resources语句确保资源在使用后能被正确关闭。
      *
@@ -309,7 +309,7 @@ public class TikTokHttpUtil {
      * 使用Jsoup库来处理视频链接的下载。
      *
      * @param videoUrl 视频的URL地址。
-     * @param dir 下载保存的目录路径。
+     * @param dir      下载保存的目录路径。
      * @param fileName 下载保存的文件名。
      */
     public void downloadVideo(String videoUrl, String dir, String fileName) {
@@ -367,13 +367,13 @@ public class TikTokHttpUtil {
      * 重试下载视频的方法，尝试通过构建不同的请求来下载视频，如果失败则记录日志。
      *
      * @param videoUrl 视频的URL地址。
-     * @param dir 保存视频的目录。
+     * @param dir      保存视频的目录。
      * @param fileName 视频的文件名。
      */
     private void retryDownloadVideo(String videoUrl, String dir, String fileName) {
         // 打印日志，表示开始尝试通过其他方式下载视频
         printLog("开始尝试通过其他方式下载视频，若依然失败请手动下载");
-        try{
+        try {
             // 创建HttpGet请求，设置请求的URI和超时时间
             HttpGet httpGet = new HttpGet(buildUri(videoUrl));
             httpGet.setConfig(setHttpTimeOut());
@@ -388,7 +388,7 @@ public class TikTokHttpUtil {
             // 创建上下文对象
             HttpClientContext context = HttpClientContext.create();
             // 执行HTTP请求，获取响应
-            try (CloseableHttpResponse req = httpClient.execute(httpGet, context)) {
+            try (CloseableHttpResponse ignored = httpClient.execute(httpGet, context)) {
                 // 获取重定向的URI
                 URI uri = context.getRedirectLocations().get(0);
                 // 打印重定向后的URI
@@ -409,11 +409,11 @@ public class TikTokHttpUtil {
                 // 执行第二次HTTP请求，获取响应
                 try (CloseableHttpResponse response = httpClient.execute(httpGet2, context2)) {
                     // 检查响应状态码，如果为200表示成功
-                    if(response.getStatusLine().getStatusCode()==200){
+                    if (response.getStatusLine().getStatusCode() == 200) {
                         // 获取响应的输入流
                         InputStream in = response.getEntity().getContent();
                         // 构建文件输出流
-                        try (OutputStream out = buildFileOutOutStream(dir, fileName)){
+                        try (OutputStream out = buildFileOutOutStream(dir, fileName)) {
                             // 逐字节读取输入流，并写入输出流，完成视频下载
                             int b;
                             while ((b = in.read()) != -1) {
@@ -422,16 +422,16 @@ public class TikTokHttpUtil {
                             // 打印日志，表示视频下载成功
                             printLog("视频下载成功");
                         }
-                    }else {
+                    } else {
                         // 打印日志，表示视频下载失败，并记录响应状态码
-                        printLog("视频下载失败："+response.getStatusLine());
+                        printLog("视频下载失败：" + response.getStatusLine());
                     }
                 }
             } catch (IOException e) {
                 // 打印日志，表示尝试重新下载失败，并记录异常信息
-                printLog("尝试重新下载失败: "+e.getMessage());
+                printLog("尝试重新下载失败: " + e.getMessage());
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             // 打印日志，表示下载地址解析失败
             printLog("下载地址解析失败!");
         }
@@ -441,12 +441,13 @@ public class TikTokHttpUtil {
     /**
      * 下载图片。
      * 使用Jsoup库从指定的imageUrl下载图片，并保存到指定的目录dir中。
+     *
      * @param imageUrl 图片的URL地址。
-     * @param dir 图片保存的目录路径。
+     * @param dir      图片保存的目录路径。
      */
-    public void downloadImage(String imageUrl, String dir){
+    public void downloadImage(String imageUrl, String dir) {
         // 初始化请求头信息，模拟浏览器访问
-        Map<String, String> headers = new HashMap<String, String>();
+        Map<String, String> headers = new HashMap<>();
         headers.put("Connection", "keep-alive");
         headers.put("Host", "aweme.snssdk.com");
         headers.put("User-Agent", USER_AGENT);
@@ -484,7 +485,7 @@ public class TikTokHttpUtil {
 
             // 下载成功后，打印日志记录
             printLog("图片下载成功:" + imageUrl);
-            printLog("图片保存路径:" + fileSavePath.getAbsolutePath()+"\n");
+            printLog("图片保存路径:" + fileSavePath.getAbsolutePath() + "\n");
         } catch (IOException e) {
             // 如果下载过程中发生异常，打印错误日志
             printLog("图片下载失败: " + e.getMessage());
@@ -524,7 +525,7 @@ public class TikTokHttpUtil {
      * 如果未指定文件名，则使用当前时间戳作为文件名。
      * 如果文件夹不存在，则尝试创建文件夹。
      *
-     * @param dir 文件保存的目录。
+     * @param dir      文件保存的目录。
      * @param fileName 文件名，可以为null。
      * @return 返回一个输出流，用于向指定文件写入数据。
      * @throws IOException 如果文件创建或打开失败。
